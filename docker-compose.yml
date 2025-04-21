@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  blue:
+    image: panora-app-blue:latest
+    container_name: panora-app-blue
+    ports:
+      - "2791:2791" # Exposing the app on port 2791
+    environment:
+      - NODE_ENV=production
+
+  green:
+    image: panora-app-green:latest
+    container_name: panora-app-green
+    ports:
+      - "2792:2791" # Exposing the green version on a different port (2792)
+    environment:
+      - NODE_ENV=production
+
+  reverse-proxy:
+    image: nginx:latest
+    container_name: nginx-reverse-proxy
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80" # Main HTTP port for public access
+    depends_on:
+      - blue
+      - green
