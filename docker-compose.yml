@@ -5,7 +5,7 @@ services:
     image: sample-next-app-blue:latest
     container_name: sample-next-app-blue
     ports:
-      - "2791:2791" # Exposing the app on port 2791
+      - "2791:2791" # Blue app on port 2791
     environment:
       - NODE_ENV=production
 
@@ -13,7 +13,7 @@ services:
     image: sample-next-app-green:latest
     container_name: sample-next-app-green
     ports:
-      - "2792:2791" # Exposing the green version on a different port (2792)
+      - "2791:2791" # Green app on port 2791
     environment:
       - NODE_ENV=production
 
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "80:80" # Main HTTP port for public access
+      - "80:80" # Expose reverse proxy on port 80
     depends_on:
       - blue
       - green
