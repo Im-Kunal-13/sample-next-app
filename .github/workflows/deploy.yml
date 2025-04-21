@@ -23,20 +23,34 @@ jobs:
             cd /home/ubuntu/sample-next-app
             git pull origin Testing
 
-             # Stop and remove the green container if it exists
-            sudo docker ps -q -f name=sample-next-app-green && sudo docker stop sample-next-app-green || true
-            sudo docker ps -q -f name=sample-next-app-green && sudo docker rm sample-next-app-green || true
+            # Step 1: Stop and remove previous green (if exists)
+            sudo docker stop sample-next-app-green || true
+            sudo docker rm sample-next-app-green || true
 
-
-            # Build and run green container
+            # Step 2: Build new green
             sudo docker build -t sample-next-app-green:latest .
+
+            # Step 3: Start green on temp port (2792)
             sudo docker run -d --name sample-next-app-green -p 2792:2791 sample-next-app-green:latest
 
-            # Update Nginx to use green
-            sudo sed -i 's|proxy_pass http://blue;|proxy_pass http://green;|' /etc/nginx/nginx.conf
-            sudo nginx -t && sudo systemctl reload nginx
+            # Step 4: Wait until green is healthy
+            echo "Waiting for green to become healthy..."
+            for i in {1..10}; do
+              curl -f http://localhost:2792 && echo "Green is healthy." && break
+              echo "Waiting... ($i)"
+              sleep 2
+            done
 
-            # Cleanup blue and tag green as blue
+            # Step 5: Stop and remove current blue (active app)
             sudo docker stop sample-next-app-blue || true
             sudo docker rm sample-next-app-blue || true
+
+            # Step 6: Re-tag green as blue and run it on port 2791
             sudo docker tag sample-next-app-green:latest sample-next-app-blue:latest
+            sudo docker run -d --name sample-next-app-blue -p 2791:2791 sample-next-app-blue:latest
+
+            # Step 7: Remove temporary green
+            sudo docker stop sample-next-app-green || true
+            sudo docker rm sample-next-app-green || true
+
+            echo "Deployment complete. Blue now running latest version on port 2791."
