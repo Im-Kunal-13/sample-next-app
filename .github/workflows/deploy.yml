@@ -1,0 +1,42 @@
+name: Deploy to EC2 (Zero Downtime)
+
+on:
+  push:
+    branches:
+      - Testing
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/sample-next-app
+            git pull origin Testing
+
+             # Stop and remove the green container if it exists
+            sudo docker ps -q -f name=sample-next-app-green && sudo docker stop sample-next-app-green || true
+            sudo docker ps -q -f name=sample-next-app-green && sudo docker rm sample-next-app-green || true
+
+
+            # Build and run green container
+            sudo docker build -t sample-next-app-green:latest .
+            sudo docker run -d --name sample-next-app-green -p 2792:2791 sample-next-app-green:latest
+
+            # Update Nginx to use green
+            sudo sed -i 's|proxy_pass http://blue;|proxy_pass http://green;|' /etc/nginx/nginx.conf
+            sudo nginx -t && sudo systemctl reload nginx
+
+            # Cleanup blue and tag green as blue
+            sudo docker stop sample-next-app-blue || true
+            sudo docker rm sample-next-app-blue || true
+            sudo docker tag sample-next-app-green:latest sample-next-app-blue:latest
