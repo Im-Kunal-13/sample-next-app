@@ -1,5 +1,5 @@
 # Step 1: Build the Next.js app
-FROM node:22-alpine as build
+FROM node:22-alpine AS build
 
 WORKDIR /app
 
@@ -16,17 +16,18 @@ COPY . .
 RUN npm run build
 
 # Step 2: Run the Next.js app
-FROM node:22-alpine as runtime
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-# Copy the build from the previous stage
-COPY --from=build /app /app
+# Copy ONLY the built app and node_modules
+COPY --from=build /app/.next /app/.next
+COPY --from=build /app/public /app/public
+COPY --from=build /app/node_modules /app/node_modules
+COPY --from=build /app/package.json /app/package.json
 
-# Install production dependencies
-RUN npm install --production
-
-# Expose the default Next.js port
+# Expose the app port
 EXPOSE 2791
 
+# Start the app
 CMD ["npm", "start"]
