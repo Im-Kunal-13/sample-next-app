@@ -3,7 +3,7 @@ name: Deploy to EC2 (Zero Downtime)
 on:
   push:
     branches:
-      - Testing
+      - master
 
 jobs:
   deploy:
@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/sample-next-app
-            git pull origin Testing
+            git pull origin master
 
             # Step 1: Stop and remove previous green (if exists)
             sudo docker stop sample-next-app-green || true
